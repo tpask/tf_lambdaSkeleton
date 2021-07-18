@@ -1,22 +1,27 @@
+
+variable "useS3" {
+  default = false
+  type    = bool
+}
 variable "owner" {
   default = "tp"
 }
-
 variable "project" {
   default = "lambda"
 }
 
 variable "lambdaName" {
   type    = string
-  default = "Test_lambda"
+  default = "test_lambda"
 }
-
 variable "payload" {
   default = "./files/lambda.py"
 }
-
 variable "filesPath" {
   default = "./files"
+}
+variable "zippedFileName" {
+  default = "lambda.zip"
 }
 
 variable "handler" {
