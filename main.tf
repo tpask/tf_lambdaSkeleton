@@ -83,13 +83,12 @@ data "archive_file" "lambda_archive" {
 
 resource "aws_lambda_function" "lambda_function_noS3" {
   count            = var.useS3 ? 0 : 1
-  filename         = "${var.filesPath}/lambda.zip"
+  filename         = data.archive_file.lambda_archive.output_path
   function_name    = var.lambdaName
   role             = aws_iam_role.lambda_role.arn
   handler          = var.handler
   source_code_hash = data.archive_file.lambda_archive.output_base64sha256
   runtime          = var.runtime
-  #source_code_hash = filebase64sha256("lambda_function_payload.zip")
 }
 
 resource "aws_lambda_function" "lambda_function_S3" {
@@ -99,8 +98,7 @@ resource "aws_lambda_function" "lambda_function_S3" {
   function_name    = var.lambdaName
   role             = aws_iam_role.lambda_role.arn
   handler          = var.handler
-  source_code_hash = data.archive_file.lambda_archive.output_base64sha256
+  source_code_hash = var.zippedFileName
   runtime          = var.runtime
-  #source_code_hash = filebase64sha256("lambda_function_payload.zip")
-  depends_on = [aws_s3_bucket_object.copyZippedFile]
+  depends_on       = [aws_s3_bucket_object.copyZippedFile]
 }
