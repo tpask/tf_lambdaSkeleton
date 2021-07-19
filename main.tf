@@ -9,19 +9,9 @@ provider "aws" {
 }
 # **** these codes deals with S3 ####
 data "aws_caller_identity" "current" {}
-
 locals {
   s3Bucket = "${data.aws_caller_identity.current.account_id}-terraform"
   key      = "${var.lambdaName}/${var.zippedFileName}"
-}
-
-module "uploadZippedToS3" {
-  source           = "./modules/uploadZippedToS3"
-  count            = var.useS3 ? 1 : 0
-  s3Bucket         = local.s3Bucket
-  key              = local.key
-  sourceZippedFile = "${var.filesPath}/${var.zippedFileName}"
-  zippedFileName   = var.zippedFileName
 }
 
 #create lambda role
@@ -84,6 +74,16 @@ resource "aws_lambda_function" "lambda_function_noS3" {
   runtime          = var.runtime
 }
 
+# only if Zipped file is stored in S3
+module "uploadZippedToS3" {
+  source           = "./modules/uploadZippedToS3"
+  count            = var.useS3 ? 1 : 0
+  s3Bucket         = local.s3Bucket
+  key              = local.key
+  sourceZippedFile = "${var.filesPath}/${var.zippedFileName}"
+  zippedFileName   = var.zippedFileName
+}
+
 resource "aws_lambda_function" "lambda_function_S3" {
   count            = var.useS3 ? 1 : 0
   s3_bucket        = local.s3Bucket
@@ -95,3 +95,5 @@ resource "aws_lambda_function" "lambda_function_S3" {
   runtime          = var.runtime
   depends_on       = [module.uploadZippedToS3]
 }
+
+# End S3 section
