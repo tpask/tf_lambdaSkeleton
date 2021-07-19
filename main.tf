@@ -1,35 +1,28 @@
-provider "aws" { region = "us-west-2" }
+provider "aws" {
+  region = var.region
+  default_tags {
+    tags = {
+      Owner   = var.owner
+      Project = var.project
+    }
+  }
+}
 # **** these codes deals with S3 ####
 data "aws_caller_identity" "current" {}
 
-
 locals {
-  #path to zippedFile`
-  zippedFilePath = "${var.filesPath}/${var.zippedFileName}"
-  s3Bucket       = "${data.aws_caller_identity.current.account_id}-terraform"
-  key            = "${var.lambdaName}/${var.zippedFileName}"
-  #lambdaZippedFile = var.useS3 ?
+  s3Bucket = "${data.aws_caller_identity.current.account_id}-terraform"
+  key      = "${var.lambdaName}/${var.zippedFileName}"
 }
 
-#create S3 bucket if it does not exists - run only if useS3 var is set to true
-resource "null_resource" "createS3" {
-  count = var.useS3 ? 1 : 0
-  provisioner "local-exec" {
-    command = "aws s3 ls s3://${local.s3Bucket} 2>/dev/null; if [ $? -eq 254 ]; then aws s3 mb s3://${local.s3Bucket}; fi"
-  }
+module "uploadZippedToS3" {
+  source           = "./modules/uploadZippedToS3"
+  count            = var.useS3 ? 1 : 0
+  s3Bucket         = local.s3Bucket
+  key              = local.key
+  sourceZippedFile = "${var.filesPath}/${var.zippedFileName}"
+  zippedFileName   = var.zippedFileName
 }
-
-# copy zip file to s3 bucket
-resource "aws_s3_bucket_object" "copyZippedFile" {
-  count      = var.useS3 ? 1 : 0
-  bucket     = local.s3Bucket
-  key        = local.key
-  source     = data.archive_file.lambda_archive.output_path
-  etag       = filemd5("${local.zippedFilePath}")
-  depends_on = [null_resource.createS3]
-}
-
-# *** end S3 section
 
 #create lambda role
 resource "aws_iam_role" "lambda_role" {
@@ -100,5 +93,5 @@ resource "aws_lambda_function" "lambda_function_S3" {
   handler          = var.handler
   source_code_hash = var.zippedFileName
   runtime          = var.runtime
-  depends_on       = [aws_s3_bucket_object.copyZippedFile]
+  depends_on       = [module.uploadZippedToS3]
 }

@@ -1,6 +1,10 @@
 
+variable "region" {
+  default = "us-west-2"
+}
+
 variable "useS3" {
-  default = false
+  default = true
   type    = bool
 }
 variable "owner" {
@@ -24,9 +28,7 @@ variable "zippedFileName" {
   default = "lambda.zip"
 }
 
-variable "handler" {
-  default = "lambda.handler"
-}
+variable "handler" { default = "lambda.handler" }
 variable "lambdaZipFile" { default = "./files/lambda.zip" }
 variable "runtime" { default = "python3.8" }
 variable "memory_size" { default = "128" }
